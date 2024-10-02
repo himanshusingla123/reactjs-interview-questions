@@ -959,7 +959,85 @@ class ParentComponent extends React.Component {
       return <input name="title" onChange={handleTitleChange} />;
     }
     ```
+### difference between synthetic event and native event and tell its similarities
+In React, event handling is done using **synthetic events**, which wrap around **native events** (the events provided by the browser). Let’s explore the differences and similarities between **synthetic events** and **native events**:
 
+### 1. **Synthetic Event (React's SyntheticEvent)**
+A **synthetic event** is a cross-browser wrapper around the browser’s native event system. React uses this system to provide a consistent API across all browsers. It abstracts away the differences in how events are handled by different browsers and adds optimizations for performance.
+
+#### Key Features of Synthetic Events:
+- **Cross-browser compatibility**: React’s synthetic events normalize the differences in event behavior across browsers, providing a unified API.
+- **Performance optimizations**: React uses **event delegation**, which attaches a single event listener at the root of the DOM (instead of attaching multiple listeners to individual DOM nodes). This improves performance, especially in large applications.
+- **Event pooling**: Synthetic events use **event pooling**, meaning that the event object is reused across multiple events for performance reasons. After the event handler runs, the event properties are nullified to reuse the object in future events. (In modern React, event pooling is less of a concern as React v17+ has made this mechanism less strict, but it still exists.)
+
+### Example of a Synthetic Event:
+```jsx
+function handleClick(event) {
+  console.log(event); // Synthetic event
+}
+
+<button onClick={handleClick}>Click me</button>
+```
+In the above code, `event` is a **synthetic event**, not a native DOM event.
+
+### 2. **Native Event (DOM Event)**
+A **native event** is the event that is fired by the browser's event system. It’s the default JavaScript event object that contains information about the event, like the type, the target element, and other related properties. Native events are browser-specific and can behave differently across different browsers.
+
+#### Key Features of Native Events:
+- **Browser-specific**: Native events are directly tied to the browser's event handling system, and there can be subtle differences between how different browsers handle certain events.
+- **No pooling**: Unlike synthetic events, native events are not pooled, meaning a new event object is created every time an event is triggered.
+- **No React-specific optimizations**: Native events do not benefit from React’s event delegation or pooling mechanisms.
+
+### Example of a Native Event:
+```js
+document.getElementById("myButton").addEventListener("click", function(event) {
+  console.log(event); // Native DOM event
+});
+```
+Here, `event` is a native event provided by the browser.
+
+### Differences Between Synthetic and Native Events:
+| **Aspect**               | **Synthetic Event**                                   | **Native Event**                                |
+|--------------------------|-------------------------------------------------------|-------------------------------------------------|
+| **Source**                | Managed by React (`SyntheticEvent` object)            | Managed by the browser                          |
+| **Cross-browser compatibility** | Ensured by React                                 | May differ between browsers                     |
+| **Event delegation**      | Yes (React delegates events at the root level)        | No (individual listeners are attached per element) |
+| **Event pooling**         | Yes (pooled event objects are reused)                 | No (new event objects are created for each event) |
+| **Performance**           | Optimized via React’s internal mechanisms             | Less optimized in terms of performance          |
+| **Customization**         | Synthetic events provide a consistent API, making customization easier | Native events directly reflect the browser's behavior |
+
+### Similarities Between Synthetic and Native Events:
+1. **Event Object Properties**: Both synthetic and native events expose common properties such as `type`, `target`, `currentTarget`, `preventDefault()`, `stopPropagation()`, and more. The API is designed to be similar to the native DOM event interface.
+   
+   Example:
+   ```jsx
+   function handleClick(event) {
+     console.log(event.type);  // Works in both synthetic and native events
+     console.log(event.target); // Works in both
+   }
+   ```
+
+2. **Propagation**: Both synthetic and native events can propagate through the DOM tree. You can use `stopPropagation()` in both to stop the event from bubbling up.
+
+3. **Preventing Default Behavior**: In both types of events, you can call `preventDefault()` to prevent the default action of the event (e.g., preventing a form from submitting or a link from following a URL).
+
+4. **Event Types**: Both synthetic and native events support common types like `click`, `keydown`, `submit`, etc.
+
+### Accessing the Native Event in React
+If you ever need to access the native event object in React, you can do so via the `nativeEvent` property on the synthetic event:
+
+```jsx
+function handleClick(event) {
+  console.log(event.nativeEvent); // Native DOM event
+}
+
+<button onClick={handleClick}>Click me</button>
+```
+
+### Summary:
+- **Synthetic events** provide a normalized, cross-browser API and performance optimizations, whereas **native events** are the raw events provided by the browser's event system.
+- Both event types expose similar properties, and React’s synthetic events are designed to mimic native event behavior closely.
+- React wraps native events in a synthetic layer for performance and compatibility reasons, but you can still access the underlying native event when needed.
     **[⬆ Back to Top](#table-of-contents)**
 
 14. ### What are inline conditional expressions?
