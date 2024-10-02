@@ -679,10 +679,66 @@ Hide/Show table of contents
     In class components, the components extending _`React.PureComponent`_ instead of _`React.Component`_ become the pure components. When props or state changes, _PureComponent_ will do a shallow comparison on both props and state by invoking `shouldComponentUpdate()` lifecycle method.
 
     **Note:** `React.memo()` is a higher-order component.
+    **Some more knowledge about react.memo()**:
+    In this line:
+
+```js
+const EmployeeProfile = memo(function EmployeeProfile({ name, email }) {
+  return (
+    <>
+      <p>Name:{name}</p>
+      <p>Email: {email}</p>
+    </>
+  );
+});
+```
+
+you are defining a **functional component** called `EmployeeProfile`, and wrapping it with React's `memo` higher-order function. Let me break down what’s happening:
+
+### 1. **Function Component Definition**
+You define `EmployeeProfile` as a regular functional component that takes two props, `name` and `email`:
+
+```js
+function EmployeeProfile({ name, email }) {
+  return (
+    <>
+      <p>Name:{name}</p>
+      <p>Email: {email}</p>
+    </>
+  );
+}
+```
+
+This component is simple: it receives `name` and `email` as props and renders them.
+
+### 2. **Using `memo`**
+You are using `React.memo` here:
+
+```js
+const EmployeeProfile = memo(function EmployeeProfile({ name, email }) { ... });
+```
+
+`memo` is a higher-order component (HOC) that wraps around the `EmployeeProfile` component. It optimizes performance by preventing unnecessary re-renders. `memo` will only re-render `EmployeeProfile` if its props (`name` or `email`) change. If the props stay the same between renders, React will skip rendering this component, helping to optimize your application.
+
+### 3. **Purpose of `memo`**
+- Without `memo`, `EmployeeProfile` would re-render every time the parent component (`EmployeeRegForm`) renders, even if the `name` or `email` props haven't changed.
+- By using `memo`, the component will only re-render if the `name` or `email` values passed as props are different from the previous render.
+
+### 4. **Usage in the Parent Component**
+In `EmployeeRegForm`, the `EmployeeProfile` component is used like this:
+
+```js
+<EmployeeProfile name={name} email={email} />
+```
+
+Whenever the user types into the form fields, `name` and `email` update through the `useState` hooks. Thanks to `memo`, `EmployeeProfile` only re-renders when either `name` or `email` changes, thus reducing unnecessary re-render cycles.
+
+### Why is it written this way?
+It’s common to use `React.memo` to optimize functional components that receive props, especially in scenarios where the parent component may update frequently, but the child component only needs to update when its own props change.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-9.  ### What is state in React?
+10.  ### What is state in React?
 
     _State_ of a component is an object that holds some information that may change over the lifetime of the component. The important point is whenever the state object changes, the component re-renders. It is always recommended to make our state as simple as possible and minimize the number of stateful components.
 
@@ -737,7 +793,7 @@ Hide/Show table of contents
 
     **[⬆ Back to Top](#table-of-contents)**
 
-10. ### What are props in React?
+11. ### What are props in React?
 
     _Props_ are inputs to components. They are single values or objects containing a set of values that are passed to components on creation similar to HTML-tag attributes. Here, the data is passed down from a parent component to a child component.
 
