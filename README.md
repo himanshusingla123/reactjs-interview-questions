@@ -939,6 +939,153 @@ class ParentComponent extends React.Component {
 
     **[⬆ Back to Top](#table-of-contents)**
 
+In JavaScript, **event listeners** and **event handlers** are key components of the event-driven architecture used in web development. While they are closely related, they serve distinct roles in the process of responding to user interactions like clicks, keypresses, and mouse movements.
+
+Here’s a detailed breakdown of the differences:
+
+### **1. Role and Definition**
+- **Event Listener**:
+  - It is a method or interface that *monitors* for a specific event on a DOM element and executes some logic when that event occurs.
+  - It is used to register a function that will be triggered when a specific event occurs on a target element.
+  
+- **Event Handler**:
+  - It is a function or piece of code that *executes* in response to an event. When the event is triggered, the event handler contains the logic that is executed.
+  - It defines what action should be performed when the event occurs.
+
+### **2. Usage in JavaScript**
+- **Event Listener**:
+  - You register an event listener using the `addEventListener()` method. It allows you to attach multiple event listeners to a single element and also define different types of events (click, keydown, etc.).
+  
+- **Event Handler**:
+  - Event handlers are functions that are invoked when an event occurs. The handler function is either defined inline in the HTML (via attributes like `onclick`, `onkeydown`, etc.) or passed as an argument to `addEventListener()`.
+
+### **3. Code Example**
+**Event Listener** (Using `addEventListener()`):
+```javascript
+const button = document.querySelector('#myButton');
+
+// Adding an event listener for 'click' event
+button.addEventListener('click', function() {
+  alert('Button clicked!');
+});
+```
+
+**Event Handler** (Direct Assignment of Handlers):
+```javascript
+const button = document.querySelector('#myButton');
+
+// Assigning an event handler directly to the 'onclick' property
+button.onclick = function() {
+  alert('Button clicked!');
+};
+```
+
+### **4. Multiple Listeners vs Single Handler**
+- **Event Listener**:
+  - You can add multiple event listeners to the same element for the same event. Each listener will be called when the event occurs.
+  - Example:
+    ```javascript
+    button.addEventListener('click', function() {
+      alert('First handler');
+    });
+    
+    button.addEventListener('click', function() {
+      alert('Second handler');
+    });
+    ```
+    In this case, both alerts will appear in sequence.
+
+- **Event Handler**:
+  - If you assign a handler using properties like `onclick`, you can only have **one** handler for each event. Assigning a new handler overwrites the previous one.
+  - Example:
+    ```javascript
+    button.onclick = function() {
+      alert('First handler');
+    };
+    
+    button.onclick = function() {
+      alert('Second handler');
+    };
+    ```
+    Only the second handler (alert "Second handler") will execute, since it overwrites the first.
+
+### **5. Removing Event Listeners vs Event Handlers**
+- **Event Listener**:
+  - You can remove an event listener using `removeEventListener()`, but you need a reference to the exact function used to add it.
+  - Example:
+    ```javascript
+    function handleClick() {
+      alert('Button clicked!');
+    }
+    
+    button.addEventListener('click', handleClick);
+    button.removeEventListener('click', handleClick); // Removes the listener
+    ```
+
+- **Event Handler**:
+  - You can remove an event handler by setting the event property to `null`.
+  - Example:
+    ```javascript
+    button.onclick = function() {
+      alert('Button clicked!');
+    };
+    
+    button.onclick = null; // Removes the event handler
+    ```
+
+### **6. Flexibility and Usage**
+- **Event Listener**:
+  - More **flexible** since it allows multiple listeners for the same event and supports different types of events (bubbling, capturing, etc.).
+  - You can also specify the event's behavior (e.g., event bubbling or capturing) using an additional argument in `addEventListener()`:
+    ```javascript
+    button.addEventListener('click', function() {
+      alert('Clicked!');
+    }, { once: true }); // Executes only once
+    ```
+
+- **Event Handler**:
+  - Simpler but **less flexible**, since it only allows one handler per event type per element. If you reassign the handler, the previous one is lost.
+  - Direct assignment of handlers (like `onclick`) does not support options like event capturing.
+
+### **7. Event Propagation (Capturing and Bubbling)**
+- **Event Listener**:
+  - When you use `addEventListener()`, you can specify whether the event should be captured during the capturing phase or the bubbling phase of event propagation.
+  - Example:
+    ```javascript
+    button.addEventListener('click', function() {
+      alert('Clicked during capture phase!');
+    }, true); // True means capturing phase
+    ```
+
+- **Event Handler**:
+  - Event handlers (such as `onclick`) by default handle events in the bubbling phase, and you cannot explicitly handle capturing through direct assignment.
+
+### **8. HTML Attribute Assignment (Event Handler)**
+- **Event Listener**:
+  - Cannot be directly assigned using HTML attributes.
+  
+- **Event Handler**:
+  - Event handlers can be assigned directly in HTML attributes (though this is discouraged in modern practices due to maintainability issues).
+  - Example:
+    ```html
+    <button onclick="alert('Button clicked!')">Click me</button>
+    ```
+
+---
+
+### **Summary of Differences**
+
+| Feature                          | Event Listener                                        | Event Handler                                      |
+|-----------------------------------|------------------------------------------------------|----------------------------------------------------|
+| **Definition**                    | A method that listens for an event on a target element | A function that executes when the event occurs      |
+| **Registration Method**           | Registered using `addEventListener()`                | Registered by assigning to event properties like `onclick` |
+| **Multiple Event Functions**      | Allows multiple listeners for the same event         | Only allows one handler per event; new handler overwrites old |
+| **Removal**                       | Can be removed with `removeEventListener()`          | Removed by setting the event handler property to `null` |
+| **Event Propagation (Capture/Bubble)** | Supports both capturing and bubbling phases with options | Supports bubbling only (default)                    |
+| **Use Case**                      | More flexible, used for complex event handling       | Simpler, used for basic event handling              |
+
+In modern web development, using `addEventListener()` to attach **event listeners** is preferred due to its flexibility, multiple listener support, and enhanced control over event propagation. However, for simpler use cases, directly assigning an **event handler** (e.g., `onclick`) can still be effective.
+
 13. ### What are synthetic events in React?
 
     `SyntheticEvent` is a cross-browser wrapper around the browser's native event. Its API is same as the browser's native event, including `stopPropagation()` and `preventDefault()`, except the events work identically across all browsers. The native events can be accessed directly from synthetic events using `nativeEvent` attribute.
