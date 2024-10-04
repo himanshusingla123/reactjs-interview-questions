@@ -2991,6 +2991,281 @@ Portals in React are a powerful tool that allows you to render components outsid
     });
     ```
 
+    **`ReactDOMServer`** is a package in React that allows you to render components on the server side. It provides methods to render React components to static markup (i.e., HTML) on the server, which can then be sent as a fully formed HTML page to the client. This is particularly useful for **Server-Side Rendering (SSR)**, which enhances performance and SEO by pre-rendering the initial HTML on the server, improving the perceived loading speed and making the content accessible to search engines.
+
+The `react-dom/server` package offers several key methods, including:
+- `renderToString()`
+- `renderToStaticMarkup()`
+
+### **Why Use `ReactDOMServer`?**
+
+1. **Server-Side Rendering (SSR)**: By generating the initial HTML on the server, the client doesn't have to wait for the entire JavaScript bundle to load before seeing content.
+2. **SEO**: Since search engine crawlers might not execute JavaScript properly, rendering content on the server ensures that the full page content is available to them.
+3. **Performance Optimization**: The client receives the HTML directly, which results in faster perceived performance for users with slow network connections.
+
+### **How Does it Work?**
+
+Normally, React components are rendered in the browser using `ReactDOM.render()` (on the client-side). But with `ReactDOMServer`, you can render the same components to HTML on the server, then send that HTML as part of the server’s response to the client.
+
+### **Methods in `ReactDOMServer`**
+
+#### **1. `renderToString()`**
+This method generates a fully rendered HTML string from your React components. Once the string is sent to the client, React will take over and enable interactive features (hydration).
+
+#### **2. `renderToStaticMarkup()`**
+Similar to `renderToString()`, but this method doesn’t include extra React attributes (like `data-reactroot`). It is useful for generating static pages where you don’t need React to take over.
+
+### **Basic Example of `renderToString`**
+
+Here’s a simple example to illustrate how server-side rendering works with `ReactDOMServer`.
+
+#### **Setup with Express (Node.js)**
+
+We'll create a server-side rendering setup using **Node.js**, **Express**, and **React**.
+
+##### 1. **Install Dependencies**
+Make sure you have the following dependencies:
+- `react`
+- `react-dom`
+- `react-dom/server`
+- `express`
+
+You can install them using:
+
+```bash
+npm install react react-dom express
+```
+
+##### 2. **Server-side Rendering Example (SSR)**
+
+Create a simple React component, and then render it on the server using `ReactDOMServer.renderToString()`.
+
+```javascript
+// server.js
+import express from 'express';
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+
+// Simple React component
+const App = () => {
+  return (
+    <div>
+      <h1>Hello from Server-Side Rendering!</h1>
+      <p>This content is rendered on the server.</p>
+    </div>
+  );
+};
+
+// Create an Express server
+const app = express();
+
+// Define a route to render the component on the server
+app.get('/', (req, res) => {
+  // Use ReactDOMServer to render the component to a string
+  const html = ReactDOMServer.renderToString(<App />);
+
+  // Send back the full HTML with the rendered string
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SSR with React</title>
+      </head>
+      <body>
+        <div id="root">${html}</div>
+        <!-- The client-side bundle can be loaded here -->
+        <script src="/bundle.js"></script>
+      </body>
+    </html>
+  `);
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is listening on port 3000');
+});
+```
+
+In this example:
+- The React component `App` is rendered to a string using `ReactDOMServer.renderToString()`.
+- The resulting HTML string is inserted into the `<div id="root">` of the server's response.
+
+When the browser requests the page, it receives the fully rendered HTML, which shows the content immediately.
+
+##### **Browser Output:**
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>SSR with React</title>
+  </head>
+  <body>
+    <div id="root">
+      <div>
+        <h1>Hello from Server-Side Rendering!</h1>
+        <p>This content is rendered on the server.</p>
+      </div>
+    </div>
+    <script src="/bundle.js"></script>
+  </body>
+</html>
+```
+
+The client can then load any necessary JavaScript to make the page interactive.
+
+### **Example 2: Using `renderToStaticMarkup`**
+
+`renderToStaticMarkup()` can be used when you don’t need React to manage the page after it’s rendered. This is useful for generating static HTML pages (like email templates, or any static content).
+
+```javascript
+import express from 'express';
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+
+// Static component for rendering as plain HTML
+const StaticPage = () => (
+  <div>
+    <h1>This is a static page</h1>
+    <p>No React interactivity needed here.</p>
+  </div>
+);
+
+// Create an Express server
+const app = express();
+
+// Define a route to render static HTML
+app.get('/static', (req, res) => {
+  // Use renderToStaticMarkup to generate HTML without extra React attributes
+  const staticHtml = ReactDOMServer.renderToStaticMarkup(<StaticPage />);
+
+  // Send the HTML response
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Static Page</title>
+      </head>
+      <body>
+        ${staticHtml}
+      </body>
+    </html>
+  `);
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+```
+
+**Difference from `renderToString`:**
+- `renderToStaticMarkup` does not include any React-related attributes or IDs (like `data-reactroot`), meaning the page will not be interactive once it reaches the client.
+- This is suitable for content that will not change, such as static marketing pages.
+
+### **Client-Side Hydration**
+
+Server-side rendering (SSR) improves the perceived loading speed, but React still needs to "take over" once the client receives the pre-rendered HTML. This process is called **hydration**.
+
+React provides the `ReactDOM.hydrate()` method to attach React’s interactivity to the pre-rendered HTML.
+
+#### **Hydration Example**
+
+Modify the previous `App` example to hydrate the app on the client-side:
+
+```javascript
+// index.js (Client-Side)
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App'; // The same App component used in SSR
+
+// Hydrate the component into the existing HTML rendered on the server
+ReactDOM.hydrate(<App />, document.getElementById('root'));
+```
+
+Here’s the flow:
+1. The server sends pre-rendered HTML using `renderToString()`.
+2. Once the client receives the page, React hydrates the page using `ReactDOM.hydrate()`, adding interactivity.
+
+### **Example 3: SSR with Hydration and Interactivity**
+
+```javascript
+// server.js
+import express from 'express';
+import React from 'react';
+import ReactDOMServer from 'react-dom/server';
+import App from './App'; // Import your App component
+
+const app = express();
+
+app.get('/', (req, res) => {
+  const html = ReactDOMServer.renderToString(<App />);
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>SSR with Hydration</title>
+      </head>
+      <body>
+        <div id="root">${html}</div>
+        <script src="/bundle.js"></script> <!-- Client-side bundle for hydration -->
+      </body>
+    </html>
+  `);
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+```
+
+```javascript
+// App.js (React Component)
+import React, { useState } from 'react';
+
+const App = () => {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <h1>SSR with Hydration</h1>
+      <p>Counter: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+};
+
+export default App;
+```
+
+```javascript
+// index.js (Client-Side Hydration)
+import React from 'react';
+import ReactDOM from 'react-dom';
+import App from './App';
+
+ReactDOM.hydrate(<App />, document.getElementById('root'));
+```
+
+In this example:
+- The server renders the initial HTML with `renderToString()`.
+- The client then hydrates the component using `ReactDOM.hydrate()` to add interactivity.
+
+### **Benefits of Server-Side Rendering**
+
+1. **Faster Initial Load**: The user can see the rendered HTML before React’s JavaScript has been downloaded and executed.
+2. **SEO Benefits**: Since the content is pre-rendered, it is available to search engine crawlers.
+3. **Improved Performance**: Server-side rendering can help for users on slower devices or networks, as they can see content immediately, even before the client-side JavaScript is fully loaded.
+
+### **Drawbacks**
+
+- **Increased Server Load**: Server-side rendering puts
+
+ additional load on the server to generate the HTML for each request.
+- **Complexity**: Managing both SSR and client-side hydration can add complexity to your application.
+
+### **Conclusion**
+
+`ReactDOMServer` provides a powerful tool for server-side rendering in React applications. By rendering components on the server and then hydrating them on the client, you can improve both performance and SEO, providing a better overall user experience.
+
     **[⬆ Back to Top](#table-of-contents)**
 
 46. ### How to use innerHTML in React?
