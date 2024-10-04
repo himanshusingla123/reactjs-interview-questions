@@ -1820,10 +1820,229 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 25. ### What is Lifting State Up in React?
 
     When several components need to share the same changing data then it is recommended to _lift the shared state up_ to their closest common ancestor. That means if two child components share the same data from its parent, then move the state to parent instead of maintaining local state in both of the child components.
+**Lifting State Up** is a common pattern in React where you move the shared state to the closest common ancestor of the components that need to use or modify that state. When multiple components need access to the same piece of data, instead of managing state independently in each component, you lift the state up to a parent component. The parent component then manages the state and passes it down to child components as props.
+
+This pattern helps in keeping data consistent between components and promotes reusability and a clean architecture.
+
+### **Why Lift State Up?**
+
+Imagine two or more sibling components need to share or update some common data. If they each manage their own state, it could lead to inconsistency. By "lifting state up" to a parent component, you ensure that the shared state is managed in one place, and both children can access and modify it reliably.
+
+### **Key Steps in Lifting State Up**:
+1. Identify the state that needs to be shared between components.
+2. Move that state to the closest common ancestor of the components that need it.
+3. Pass down the state as props to the child components.
+4. Pass a function to modify the state (usually a state updater function) to the components that need to update the state.
+
+### **Example 1: Simple Example with Two Components**
+
+Let’s say you have two components that need to display the same value and update it.
+
+#### Initial Setup (Without Lifting State Up)
+```jsx
+import React, { useState } from 'react';
+
+const InputComponent = () => {
+  const [inputValue, setInputValue] = useState('');
+
+  return (
+    <input
+      type="text"
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+    />
+  );
+};
+
+const DisplayComponent = () => {
+  const [displayValue, setDisplayValue] = useState('');
+
+  return <p>Display: {displayValue}</p>;
+};
+
+export default function App() {
+  return (
+    <div>
+      <InputComponent />
+      <DisplayComponent />
+    </div>
+  );
+}
+```
+
+In this code, both `InputComponent` and `DisplayComponent` are maintaining their own state independently. If you type something in the `InputComponent`, it will not reflect in the `DisplayComponent` because the state is not shared.
+
+#### Lifting State Up
+To share the state between these components, we will lift the state up to a parent component.
+
+```jsx
+import React, { useState } from 'react';
+
+const InputComponent = ({ inputValue, setInputValue }) => {
+  return (
+    <input
+      type="text"
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+    />
+  );
+};
+
+const DisplayComponent = ({ inputValue }) => {
+  return <p>Display: {inputValue}</p>;
+};
+
+export default function App() {
+  const [inputValue, setInputValue] = useState('');
+
+  return (
+    <div>
+      <InputComponent inputValue={inputValue} setInputValue={setInputValue} />
+      <DisplayComponent inputValue={inputValue} />
+    </div>
+  );
+}
+```
+
+**Explanation**:
+- The `App` component now holds the `inputValue` state and the `setInputValue` function.
+- It passes `inputValue` and `setInputValue` as props to the `InputComponent`.
+- It passes `inputValue` to `DisplayComponent` as well.
+- Now, when you type something in the `InputComponent`, the value is updated in the parent (`App`), and it gets passed down to the `DisplayComponent` as well, so the two components are synchronized.
+
+### **Example 2: Shared Temperature Conversion App**
+
+Let’s look at a more practical example where lifting state up is crucial. Suppose you have two components: one to input temperature in Celsius and one to input temperature in Fahrenheit, and you want them to be synchronized.
+
+#### Initial Setup (Without Lifting State Up)
+```jsx
+import React, { useState } from 'react';
+
+const CelsiusInput = () => {
+  const [temperature, setTemperature] = useState('');
+
+  return (
+    <fieldset>
+      <legend>Enter temperature in Celsius:</legend>
+      <input
+        value={temperature}
+        onChange={(e) => setTemperature(e.target.value)}
+      />
+    </fieldset>
+  );
+};
+
+const FahrenheitInput = () => {
+  const [temperature, setTemperature] = useState('');
+
+  return (
+    <fieldset>
+      <legend>Enter temperature in Fahrenheit:</legend>
+      <input
+        value={temperature}
+        onChange={(e) => setTemperature(e.target.value)}
+      />
+    </fieldset>
+  );
+};
+
+export default function App() {
+  return (
+    <div>
+      <CelsiusInput />
+      <FahrenheitInput />
+    </div>
+  );
+}
+```
+
+Here, both `CelsiusInput` and `FahrenheitInput` manage their own state independently, so there's no synchronization between them.
+
+#### Lifting State Up
+We need to lift the state up to a common parent so that the Celsius and Fahrenheit values can be converted and synchronized.
+
+```jsx
+import React, { useState } from 'react';
+
+// Utility function to convert temperatures
+const toCelsius = (fahrenheit) => ((fahrenheit - 32) * 5) / 9;
+const toFahrenheit = (celsius) => (celsius * 9) / 5 + 32;
+
+const TemperatureInput = ({ scale, temperature, onTemperatureChange }) => {
+  const scaleNames = {
+    c: 'Celsius',
+    f: 'Fahrenheit',
+  };
+
+  return (
+    <fieldset>
+      <legend>Enter temperature in {scaleNames[scale]}:</legend>
+      <input
+        value={temperature}
+        onChange={(e) => onTemperatureChange(e.target.value)}
+      />
+    </fieldset>
+  );
+};
+
+const App = () => {
+  const [temperature, setTemperature] = useState('');
+  const [scale, setScale] = useState('c');
+
+  const handleCelsiusChange = (temperature) => {
+    setScale('c');
+    setTemperature(temperature);
+  };
+
+  const handleFahrenheitChange = (temperature) => {
+    setScale('f');
+    setTemperature(temperature);
+  };
+
+  const celsius = scale === 'f' ? toCelsius(temperature) : temperature;
+  const fahrenheit = scale === 'c' ? toFahrenheit(temperature) : temperature;
+
+  return (
+    <div>
+      <TemperatureInput
+        scale="c"
+        temperature={celsius}
+        onTemperatureChange={handleCelsiusChange}
+      />
+      <TemperatureInput
+        scale="f"
+        temperature={fahrenheit}
+        onTemperatureChange={handleFahrenheitChange}
+      />
+    </div>
+  );
+};
+
+export default App;
+```
+
+**Explanation**:
+- We have a single `TemperatureInput` component that is used for both Celsius and Fahrenheit inputs. It takes `scale`, `temperature`, and `onTemperatureChange` as props.
+- The `App` component manages the shared state of the temperature and the scale (whether it is Celsius or Fahrenheit).
+- Based on the current scale, it converts the temperature using utility functions (`toCelsius` and `toFahrenheit`).
+- When the user changes one input (say Fahrenheit), the state is updated in the `App` component, and the new value is passed down to both inputs. This ensures that both components are synchronized.
+
+### **Key Benefits of Lifting State Up**:
+1. **Consistency**: When you lift state up, multiple components can share the same state and keep it consistent.
+2. **Single Source of Truth**: The parent component becomes the "source of truth" for shared state, which ensures that all children have the correct data.
+3. **Simplifies State Management**: Rather than managing state in multiple components, you only need to manage it in one place (the parent component), which reduces complexity.
+
+### **When to Use Lifting State Up**:
+- When two or more sibling components need to share or modify the same data.
+- When multiple components need access to some state, and it doesn't make sense for each component to maintain its own state separately.
+- In complex forms where data needs to be coordinated between various parts of the form (e.g., validating input fields that depend on each other).
+
+### **Conclusion**
+Lifting state up is a vital concept in React that ensures shared data between components is maintained in a single, centralized location. This approach improves maintainability, consistency, and predictability of the application’s state, especially in cases where multiple components rely on the same data.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-26. ### What are Higher-Order Components?
+27. ### What are Higher-Order Components?
 
     A _higher-order component_ (_HOC_) is a function that takes a component and returns a new component. Basically, it's a pattern that is derived from React's compositional nature.
 
@@ -1842,7 +2061,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-27. ### What is children prop?
+28. ### What is children prop?
 
     _Children_ is a prop that allows you to pass components as data to other components, just like any other prop you use. Component tree put between component's opening and closing tag will be passed to that component as `children` prop.
 
@@ -1893,7 +2112,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-28. ### How to write comments in React?
+29. ### How to write comments in React?
 
     The comments in React/JSX are similar to JavaScript Multiline comments but are wrapped in curly braces.
 
@@ -1918,7 +2137,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-29. ### What is reconciliation?
+30. ### What is reconciliation?
 
     `Reconciliation` is the process through which React updates the Browser DOM and makes React work faster. React use a `diffing algorithm` so that component updates are predictable and faster. React would first calculate the difference between the `real DOM` and the copy of DOM `(Virtual DOM)` when there's an update of components.
     React stores a copy of Browser DOM which is called `Virtual DOM`. When we make changes or add data, React creates a new Virtual DOM and compares it with the previous one. This comparison is done by `Diffing Algorithm`.
@@ -1926,7 +2145,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-30. ### Does the lazy function support named exports?
+31. ### Does the lazy function support named exports?
 
     No, currently `React.lazy` function supports default exports only. If you would like to import modules which are named exports, you can create an intermediate module that reexports it as the default. It also ensures that tree shaking keeps working and don’t pull unused components.
     Let's take a component file which exports multiple named components,
@@ -1953,7 +2172,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-31. ### Why React uses `className` over `class` attribute?
+32. ### Why React uses `className` over `class` attribute?
 
     The attribute names written in JSX turned into keys of JavaScript objects and the JavaScript names cannot contain dashes or reversed words, it is recommended to use camelCase wherever applicable in JSX code. The attribute `class` is a keyword in JavaScript, and JSX is an extension of JavaScript. That's the principle reason why React uses `className` instead of `class`. Pass a string as the `className` prop.
 
@@ -1965,7 +2184,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-32. ### What are fragments?
+33. ### What are fragments?
 
     It's a common pattern or practice in React for a component to return multiple elements. _Fragments_ let you group a list of children without adding extra nodes to the DOM.
     You need to use either `<Fragment>` or a shorter syntax having empty tag (`<></>`).
@@ -2014,7 +2233,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-33. ### Why fragments are better than container divs?
+34. ### Why fragments are better than container divs?
 
     Below are the list of reasons to prefer fragments over container DOM elements,
 
@@ -2024,7 +2243,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-34. ### What are portals in React?
+35. ### What are portals in React?
 
     _Portal_ is a recommended way to render children into a DOM node that exists outside the DOM hierarchy of the parent component. When using
     CSS transform in a component, its descendant elements should not use fixed positioning, otherwise the layout will blow up.
@@ -2037,13 +2256,13 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-35. ### What are stateless components?
+36. ### What are stateless components?
 
     If the behaviour of a component is independent of its state then it can be a stateless component. You can use either a function or a class for creating stateless components. But unless you need to use a lifecycle hook in your components, you should go for function components. There are a lot of benefits if you decide to use function components here; they are easy to write, understand, and test, a little faster, and you can avoid the `this` keyword altogether.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-36. ### What are stateful components?
+37. ### What are stateful components?
 
     If the behaviour of a component is dependent on the _state_ of the component then it can be termed as stateful component. These _stateful components_ are either function components with hooks or _class components_.
 
@@ -2096,7 +2315,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-37. ### How to apply validation on props in React?
+38. ### How to apply validation on props in React?
 
     When the application is running in _development mode_, React will automatically check all props that we set on components to make sure they have _correct type_. If the type is incorrect, React will generate warning messages in the console. It's disabled in _production mode_ due to performance impact. The mandatory props are defined with `isRequired`.
 
@@ -2161,7 +2380,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-38. ### What are the advantages of React?
+39. ### What are the advantages of React?
 
     Below are the list of main advantages of React,
 
@@ -2173,7 +2392,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-39. ### What are the limitations of React?
+40. ### What are the limitations of React?
 
     Apart from the advantages, there are few limitations of React too,
 
@@ -2185,13 +2404,13 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-40. ### What are the recommended ways for static type checking?
+41. ### What are the recommended ways for static type checking?
 
     Normally we use _PropTypes library_ (`React.PropTypes` moved to a `prop-types` package since React v15.5) for _type checking_ in the React applications. For large code bases, it is recommended to use _static type checkers_ such as Flow or TypeScript, that perform type checking at compile time and provide auto-completion features.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-41. ### What is the use of `react-dom` package?
+42. ### What is the use of `react-dom` package?
 
     The `react-dom` package provides _DOM-specific methods_ that can be used at the top level of your app. Most of the components are not required to use this module. Some of the methods of this package are:
 
@@ -2203,7 +2422,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-42. ### What is ReactDOMServer?
+43. ### What is ReactDOMServer?
 
     The `ReactDOMServer` object enables you to render components to static markup (typically used on node server). This object is mainly used for _server-side rendering_ (SSR). The following methods can be used in both the server and browser environments:
 
@@ -2230,7 +2449,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-43. ### How to use innerHTML in React?
+44. ### How to use innerHTML in React?
 
     The `dangerouslySetInnerHTML` attribute is React's replacement for using `innerHTML` in the browser DOM. Just like `innerHTML`, it is risky to use this attribute considering cross-site scripting (XSS) attacks. You just need to pass a `__html` object as key and HTML text as value.
 
@@ -2248,7 +2467,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-44. ### How to use styles in React?
+45. ### How to use styles in React?
 
     The `style` attribute accepts a JavaScript object with camelCased properties rather than a CSS string. This is consistent with the DOM style JavaScript property, is more efficient, and prevents XSS security holes.
 
@@ -2267,7 +2486,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-45. ### How events are different in React?
+46. ### How events are different in React?
 
     Handling events in React elements has some syntactic differences:
 
@@ -2276,7 +2495,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-46. ### What is the impact of indexes as keys?
+47. ### What is the impact of indexes as keys?
 
     Keys should be stable, predictable, and unique so that React can keep track of elements.
 
@@ -2300,7 +2519,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-47. ### How do you conditionally render components?
+48. ### How do you conditionally render components?
 
     In some cases you want to render different components depending on some state. JSX does not render `false` or `undefined`, so you can use conditional _short-circuiting_ to render a given part of your component only if a certain condition is true.
 
@@ -2326,7 +2545,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-48. ### Why we need to be careful when spreading props on DOM elements?
+49. ### Why we need to be careful when spreading props on DOM elements?
 
     When we _spread props_ we run into the risk of adding unknown HTML attributes, which is a bad practice. Instead we can use prop destructuring with `...rest` operator, so it will add only required props.
 
@@ -2344,7 +2563,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-49. ### How do you memoize a component?
+50. ### How do you memoize a component?
 
     There are memoize libraries available which can be used on function components.
 
@@ -2376,7 +2595,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-50. ### How you implement Server Side Rendering or SSR?
+51. ### How you implement Server Side Rendering or SSR?
 
     React is already equipped to handle rendering on Node servers. A special version of the DOM renderer is available, which follows the same pattern as on the client side.
 
@@ -2391,19 +2610,19 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-51. ### How to enable production mode in React?
+52. ### How to enable production mode in React?
 
     You should use Webpack's `DefinePlugin` method to set `NODE_ENV` to `production`, by which it strip out things like propType validation and extra warnings. Apart from this, if you minify the code, for example, Uglify's dead-code elimination to strip out development only code and comments, it will drastically reduce the size of your bundle.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-52. ### Do Hooks replace render props and higher order components?
+53. ### Do Hooks replace render props and higher order components?
 
     Both render props and higher-order components render only a single child but in most of the cases Hooks are a simpler way to serve this by reducing nesting in your tree.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-53. ### What is a switching component?
+54. ### What is a switching component?
 
     A _switching component_ is a component that renders one of many components. We need to use object to map prop values to components.
 
@@ -2436,7 +2655,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-54. ### What are React Mixins?
+55. ### What are React Mixins?
 
     _Mixins_ are a way to totally separate components to have a common functionality. Mixins **should not be used** and can be replaced with _higher-order components_ or _decorators_.
 
@@ -2455,7 +2674,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-55. ### What are the Pointer Events supported in React?
+56. ### What are the Pointer Events supported in React?
 
     _Pointer Events_ provide a unified way of handling all input events. In the old days we had a mouse and respective event listeners to handle them but nowadays we have many devices which don't correlate to having a mouse, like phones with touch surface or pens. We need to remember that these events will only work in browsers that support the _Pointer Events_ specification.
 
@@ -2474,7 +2693,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-56. ### Why should component names start with capital letter?
+57. ### Why should component names start with capital letter?
 
     If you are rendering your component using JSX, the name of that component has to begin with a capital letter otherwise React will throw an error as an unrecognized tag. This convention is because only HTML elements and SVG tags can begin with a lowercase letter.
 
@@ -2504,7 +2723,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-57. ### Are custom DOM attributes supported in React v16?
+58. ### Are custom DOM attributes supported in React v16?
 
     Yes. In the past, React used to ignore unknown DOM attributes. If you wrote JSX with an attribute that React doesn't recognize, React would just skip it.
 
@@ -2530,7 +2749,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-58. ### How to loop inside JSX?
+59. ### How to loop inside JSX?
 
     You can simply use `Array.prototype.map` with ES6 _arrow function_ syntax.
 
@@ -2558,7 +2777,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-59. ### How do you access props in attribute quotes?
+60. ### How do you access props in attribute quotes?
 
     React (or JSX) doesn't support variable interpolation inside an attribute value. The below representation won't work:
 
@@ -2580,7 +2799,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-60. ### What is React proptype array with shape?
+61. ### What is React proptype array with shape?
 
     If you want to pass an array of objects to a component with a particular shape then use `React.PropTypes.shape()` as an argument to `React.PropTypes.arrayOf()`.
 
@@ -2597,7 +2816,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-61. ### How to conditionally apply class attributes?
+62. ### How to conditionally apply class attributes?
 
     You shouldn't use curly braces inside quotes because it is going to be evaluated as a string.
 
@@ -2619,13 +2838,13 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-62. ### What is the difference between React and ReactDOM?
+63. ### What is the difference between React and ReactDOM?
 
     The `react` package contains `React.createElement()`, `React.Component`, `React.Children`, and other helpers related to elements and component classes. You can think of these as the isomorphic or universal helpers that you need to build components. The `react-dom` package contains `ReactDOM.render()`, and in `react-dom/server` we have _server-side rendering_ support with `ReactDOMServer.renderToString()` and `ReactDOMServer.renderToStaticMarkup()`.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-63. ### Why ReactDOM is separated from React?
+64. ### Why ReactDOM is separated from React?
 
     The React team worked on extracting all DOM-related features into a separate library called _ReactDOM_. React v0.14 is the first release in which the libraries are split. By looking at some of the packages, `react-native`, `react-art`, `react-canvas`, and `react-three`, it has become clear that the beauty and essence of React has nothing to do with browsers or the DOM.
 
@@ -2633,7 +2852,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-64. ### How to use React label element?
+65. ### How to use React label element?
 
     If you try to render a `<label>` element bound to a text input using the standard `for` attribute, then it produces HTML missing that attribute and prints a warning to the console.
 
@@ -2651,7 +2870,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-65. ### How to combine multiple inline style objects?
+66. ### How to combine multiple inline style objects?
 
     You can use _spread operator_ in regular React:
 
@@ -2671,7 +2890,7 @@ In most modern React development, you’ll rarely need to manually use `React.cr
 
     **[⬆ Back to Top](#table-of-contents)**
 
-66. ### How to re-render the view when the browser is resized?
+67. ### How to re-render the view when the browser is resized?
 
     You can use the `useState` hook to manage the width and height state variables, and the `useEffect` hook to add and remove the `resize` event listener. The `[]` dependency array passed to useEffect ensures that the effect only runs once (on mount) and not on every re-render.
 
