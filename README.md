@@ -2536,16 +2536,277 @@ In class-based React components, the `children` prop provides a powerful mechani
     ```
 
     The first argument is any render-able React child, such as an element, string, or fragment. The second argument is a DOM element.
+    **Portals** in React provide a way to render components outside their parent component's DOM hierarchy. They are especially useful when you need to render content that is logically part of your React component hierarchy but needs to exist elsewhere in the DOM, such as for modals, tooltips, or dropdown menus that need to escape the normal flow of parent components (like being overlaid on top of other elements).
+
+Portals allow you to insert a child component into a different part of the DOM, rather than being confined within its parent.
+
+### **How to Create a Portal in React**
+
+React provides the `ReactDOM.createPortal` function to create a portal. The function takes two arguments:
+1. **The JSX/React component** to be rendered.
+2. **The DOM element** where the component should be rendered (outside of the usual parent DOM hierarchy).
+
+### **Basic Example of a Portal**
+
+In the following example, we will create a simple modal dialog using a portal.
+
+#### 1. **HTML Structure**
+Make sure you have a target element in your `index.html` file that will serve as the portal’s container. Typically, it's placed outside the root div.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Portal Example</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <div id="modal-root"></div> <!-- Modal container for portal -->
+  </body>
+</html>
+```
+
+#### 2. **Basic Modal Example Using Portals**
+
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+class Modal extends React.Component {
+  render() {
+    return ReactDOM.createPortal(
+      <div style={modalStyle}>
+        <h2>Portal Modal</h2>
+        <p>This modal is rendered using a React portal!</p>
+        <button onClick={this.props.onClose}>Close Modal</button>
+      </div>,
+      document.getElementById('modal-root') // This is where we insert the modal
+    );
+  }
+}
+
+const modalStyle = {
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  padding: '20px',
+  backgroundColor: 'white',
+  border: '1px solid black',
+  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+};
+
+class App extends React.Component {
+  state = { showModal: false };
+
+  openModal = () => {
+    this.setState({ showModal: true });
+  };
+
+  closeModal = () => {
+    this.setState({ showModal: false });
+  };
+
+  render() {
+    return (
+      <div>
+        <h1>React Portal Example</h1>
+        <button onClick={this.openModal}>Open Modal</button>
+
+        {this.state.showModal && <Modal onClose={this.closeModal} />}
+      </div>
+    );
+  }
+}
+
+export default App;
+```
+
+**Explanation**:
+- The modal is rendered into the `modal-root` div, outside the usual DOM hierarchy of `App`.
+- `ReactDOM.createPortal` is used to render the `Modal` component into `modal-root`.
+- Clicking "Open Modal" will render the modal on top of everything else on the page.
+
+### **Use Case Scenarios for Portals**
+
+#### 1. **Modals and Dialogs**
+As shown in the example above, portals are ideal for rendering modal dialogs. This is because a modal often needs to overlay the entire page, bypassing the normal parent-child DOM structure.
+
+#### 2. **Tooltips**
+Tooltips often need to appear outside the normal flow of the parent component to avoid layout issues. A portal ensures that the tooltip is properly positioned on the page regardless of the surrounding DOM elements.
+
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+class Tooltip extends React.Component {
+  render() {
+    return ReactDOM.createPortal(
+      <div style={tooltipStyle}>{this.props.text}</div>,
+      document.getElementById('tooltip-root') // Tooltip rendered outside the normal hierarchy
+    );
+  }
+}
+
+const tooltipStyle = {
+  position: 'absolute',
+  top: '10px',
+  left: '100px',
+  padding: '5px 10px',
+  backgroundColor: 'black',
+  color: 'white',
+  borderRadius: '4px',
+};
+
+class App extends React.Component {
+  render() {
+    return (
+      <div>
+        <h1>Tooltip Example with Portals</h1>
+        <p>Hover over the <span style={{ borderBottom: '1px dotted' }}>text</span> to see the tooltip.</p>
+
+        <Tooltip text="This is a tooltip rendered via a portal!" />
+      </div>
+    );
+  }
+}
+
+export default App;
+```
+
+In this case, the tooltip is rendered at a specific location on the page, but it's rendered outside of the normal DOM structure using a portal.
+
+#### 3. **Dropdowns and Context Menus**
+Dropdowns and context menus sometimes need to escape the normal DOM hierarchy to ensure they are rendered correctly in relation to other elements, especially if the parent component has overflow or positioning issues.
+
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+class Dropdown extends React.Component {
+  render() {
+    return ReactDOM.createPortal(
+      <ul style={dropdownStyle}>
+        <li>Option 1</li>
+        <li>Option 2</li>
+        <li>Option 3</li>
+      </ul>,
+      document.getElementById('dropdown-root') // Dropdown rendered outside normal flow
+    );
+  }
+}
+
+const dropdownStyle = {
+  position: 'absolute',
+  top: '50px',
+  left: '50px',
+  listStyle: 'none',
+  padding: '10px',
+  backgroundColor: 'white',
+  border: '1px solid black',
+};
+
+class App extends React.Component {
+  state = { showDropdown: false };
+
+  toggleDropdown = () => {
+    this.setState((prevState) => ({ showDropdown: !prevState.showDropdown }));
+  };
+
+  render() {
+    return (
+      <div>
+        <h1>Dropdown Example with Portals</h1>
+        <button onClick={this.toggleDropdown}>Toggle Dropdown</button>
+
+        {this.state.showDropdown && <Dropdown />}
+      </div>
+    );
+  }
+}
+
+export default App;
+```
+
+**Explanation**:
+- The dropdown is rendered outside of the component hierarchy, ensuring it’s not constrained by any CSS rules or layout issues affecting the parent component.
+
+### **Portal Events: Propagation and Bubbling**
+
+Even though a portal allows rendering outside the parent hierarchy, React’s event bubbling works the same. Events fired from within a portal still propagate up the React component tree as if the portal were part of the normal React tree.
+
+#### Example: Event Propagation in Portals
+
+```jsx
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+class Modal extends React.Component {
+  render() {
+    return ReactDOM.createPortal(
+      <div style={modalStyle} onClick={this.props.onClick}>
+        <h2>Clicking inside this modal still propagates to the parent event handler!</h2>
+      </div>,
+      document.getElementById('modal-root')
+    );
+  }
+}
+
+const modalStyle = {
+  position: 'fixed',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  padding: '20px',
+  backgroundColor: 'white',
+  border: '1px solid black',
+  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+};
+
+class App extends React.Component {
+  handleParentClick = () => {
+    alert('Parent element clicked!');
+  };
+
+  render() {
+    return (
+      <div onClick={this.handleParentClick}>
+        <h1>Click anywhere in this area</h1>
+        <Modal />
+      </div>
+    );
+  }
+}
+
+export default App;
+```
+
+In this example:
+- Clicking inside the modal triggers the parent component’s click handler because event propagation still works as if the modal were part of the regular component hierarchy.
+
+### **Why Use Portals?**
+
+1. **Escape from Parent's CSS/DOM Restrictions**: Components like modals, tooltips, and dropdowns often need to escape the layout or overflow constraints imposed by their parent components.
+  
+2. **Maintain Component Hierarchy**: Even though content is rendered elsewhere in the DOM, portals maintain the correct React component hierarchy. This ensures that state and event handling work correctly, which makes React portals more efficient than pure DOM manipulations.
+
+3. **Event Bubbling**: Events fired from a portal behave the same as events from elements inside the parent DOM tree. This allows you to structure components in a logical way but still handle events seamlessly.
+
+### **Conclusion**
+
+Portals in React are a powerful tool that allows you to render components outside of their normal DOM hierarchy, while still preserving the same component hierarchy and event propagation. They are especially useful for rendering components like modals, tooltips, and dropdowns, which need to escape the parent DOM structure for proper layout and positioning.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-37. ### What are stateless components?
+38. ### What are stateless components?
 
     If the behaviour of a component is independent of its state then it can be a stateless component. You can use either a function or a class for creating stateless components. But unless you need to use a lifecycle hook in your components, you should go for function components. There are a lot of benefits if you decide to use function components here; they are easy to write, understand, and test, a little faster, and you can avoid the `this` keyword altogether.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-38. ### What are stateful components?
+39. ### What are stateful components?
 
     If the behaviour of a component is dependent on the _state_ of the component then it can be termed as stateful component. These _stateful components_ are either function components with hooks or _class components_.
 
@@ -2598,7 +2859,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-39. ### How to apply validation on props in React?
+40. ### How to apply validation on props in React?
 
     When the application is running in _development mode_, React will automatically check all props that we set on components to make sure they have _correct type_. If the type is incorrect, React will generate warning messages in the console. It's disabled in _production mode_ due to performance impact. The mandatory props are defined with `isRequired`.
 
@@ -2663,7 +2924,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-40. ### What are the advantages of React?
+41. ### What are the advantages of React?
 
     Below are the list of main advantages of React,
 
@@ -2675,7 +2936,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-41. ### What are the limitations of React?
+42. ### What are the limitations of React?
 
     Apart from the advantages, there are few limitations of React too,
 
@@ -2687,13 +2948,13 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-42. ### What are the recommended ways for static type checking?
+43. ### What are the recommended ways for static type checking?
 
     Normally we use _PropTypes library_ (`React.PropTypes` moved to a `prop-types` package since React v15.5) for _type checking_ in the React applications. For large code bases, it is recommended to use _static type checkers_ such as Flow or TypeScript, that perform type checking at compile time and provide auto-completion features.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-43. ### What is the use of `react-dom` package?
+44. ### What is the use of `react-dom` package?
 
     The `react-dom` package provides _DOM-specific methods_ that can be used at the top level of your app. Most of the components are not required to use this module. Some of the methods of this package are:
 
@@ -2705,7 +2966,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-44. ### What is ReactDOMServer?
+45. ### What is ReactDOMServer?
 
     The `ReactDOMServer` object enables you to render components to static markup (typically used on node server). This object is mainly used for _server-side rendering_ (SSR). The following methods can be used in both the server and browser environments:
 
@@ -2732,7 +2993,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-45. ### How to use innerHTML in React?
+46. ### How to use innerHTML in React?
 
     The `dangerouslySetInnerHTML` attribute is React's replacement for using `innerHTML` in the browser DOM. Just like `innerHTML`, it is risky to use this attribute considering cross-site scripting (XSS) attacks. You just need to pass a `__html` object as key and HTML text as value.
 
@@ -2750,7 +3011,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-46. ### How to use styles in React?
+47. ### How to use styles in React?
 
     The `style` attribute accepts a JavaScript object with camelCased properties rather than a CSS string. This is consistent with the DOM style JavaScript property, is more efficient, and prevents XSS security holes.
 
@@ -2769,7 +3030,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-47. ### How events are different in React?
+48. ### How events are different in React?
 
     Handling events in React elements has some syntactic differences:
 
@@ -2778,7 +3039,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-48. ### What is the impact of indexes as keys?
+49. ### What is the impact of indexes as keys?
 
     Keys should be stable, predictable, and unique so that React can keep track of elements.
 
@@ -2802,7 +3063,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-49. ### How do you conditionally render components?
+50. ### How do you conditionally render components?
 
     In some cases you want to render different components depending on some state. JSX does not render `false` or `undefined`, so you can use conditional _short-circuiting_ to render a given part of your component only if a certain condition is true.
 
@@ -2828,7 +3089,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-50. ### Why we need to be careful when spreading props on DOM elements?
+51. ### Why we need to be careful when spreading props on DOM elements?
 
     When we _spread props_ we run into the risk of adding unknown HTML attributes, which is a bad practice. Instead we can use prop destructuring with `...rest` operator, so it will add only required props.
 
@@ -2846,7 +3107,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-51. ### How do you memoize a component?
+52. ### How do you memoize a component?
 
     There are memoize libraries available which can be used on function components.
 
@@ -2878,7 +3139,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-52. ### How you implement Server Side Rendering or SSR?
+53. ### How you implement Server Side Rendering or SSR?
 
     React is already equipped to handle rendering on Node servers. A special version of the DOM renderer is available, which follows the same pattern as on the client side.
 
@@ -2893,19 +3154,19 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-53. ### How to enable production mode in React?
+54. ### How to enable production mode in React?
 
     You should use Webpack's `DefinePlugin` method to set `NODE_ENV` to `production`, by which it strip out things like propType validation and extra warnings. Apart from this, if you minify the code, for example, Uglify's dead-code elimination to strip out development only code and comments, it will drastically reduce the size of your bundle.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-54. ### Do Hooks replace render props and higher order components?
+55. ### Do Hooks replace render props and higher order components?
 
     Both render props and higher-order components render only a single child but in most of the cases Hooks are a simpler way to serve this by reducing nesting in your tree.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-55. ### What is a switching component?
+56. ### What is a switching component?
 
     A _switching component_ is a component that renders one of many components. We need to use object to map prop values to components.
 
@@ -2938,7 +3199,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-56. ### What are React Mixins?
+57. ### What are React Mixins?
 
     _Mixins_ are a way to totally separate components to have a common functionality. Mixins **should not be used** and can be replaced with _higher-order components_ or _decorators_.
 
@@ -2957,7 +3218,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-57. ### What are the Pointer Events supported in React?
+58. ### What are the Pointer Events supported in React?
 
     _Pointer Events_ provide a unified way of handling all input events. In the old days we had a mouse and respective event listeners to handle them but nowadays we have many devices which don't correlate to having a mouse, like phones with touch surface or pens. We need to remember that these events will only work in browsers that support the _Pointer Events_ specification.
 
@@ -2976,7 +3237,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-58. ### Why should component names start with capital letter?
+59. ### Why should component names start with capital letter?
 
     If you are rendering your component using JSX, the name of that component has to begin with a capital letter otherwise React will throw an error as an unrecognized tag. This convention is because only HTML elements and SVG tags can begin with a lowercase letter.
 
@@ -3006,7 +3267,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-59. ### Are custom DOM attributes supported in React v16?
+60. ### Are custom DOM attributes supported in React v16?
 
     Yes. In the past, React used to ignore unknown DOM attributes. If you wrote JSX with an attribute that React doesn't recognize, React would just skip it.
 
@@ -3032,7 +3293,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-60. ### How to loop inside JSX?
+61. ### How to loop inside JSX?
 
     You can simply use `Array.prototype.map` with ES6 _arrow function_ syntax.
 
@@ -3060,7 +3321,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-61. ### How do you access props in attribute quotes?
+62. ### How do you access props in attribute quotes?
 
     React (or JSX) doesn't support variable interpolation inside an attribute value. The below representation won't work:
 
@@ -3082,7 +3343,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-62. ### What is React proptype array with shape?
+63. ### What is React proptype array with shape?
 
     If you want to pass an array of objects to a component with a particular shape then use `React.PropTypes.shape()` as an argument to `React.PropTypes.arrayOf()`.
 
@@ -3099,7 +3360,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-63. ### How to conditionally apply class attributes?
+64. ### How to conditionally apply class attributes?
 
     You shouldn't use curly braces inside quotes because it is going to be evaluated as a string.
 
@@ -3121,13 +3382,13 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-64. ### What is the difference between React and ReactDOM?
+65. ### What is the difference between React and ReactDOM?
 
     The `react` package contains `React.createElement()`, `React.Component`, `React.Children`, and other helpers related to elements and component classes. You can think of these as the isomorphic or universal helpers that you need to build components. The `react-dom` package contains `ReactDOM.render()`, and in `react-dom/server` we have _server-side rendering_ support with `ReactDOMServer.renderToString()` and `ReactDOMServer.renderToStaticMarkup()`.
 
     **[⬆ Back to Top](#table-of-contents)**
 
-65. ### Why ReactDOM is separated from React?
+66. ### Why ReactDOM is separated from React?
 
     The React team worked on extracting all DOM-related features into a separate library called _ReactDOM_. React v0.14 is the first release in which the libraries are split. By looking at some of the packages, `react-native`, `react-art`, `react-canvas`, and `react-three`, it has become clear that the beauty and essence of React has nothing to do with browsers or the DOM.
 
@@ -3135,7 +3396,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-66. ### How to use React label element?
+67. ### How to use React label element?
 
     If you try to render a `<label>` element bound to a text input using the standard `for` attribute, then it produces HTML missing that attribute and prints a warning to the console.
 
@@ -3153,7 +3414,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-67. ### How to combine multiple inline style objects?
+68. ### How to combine multiple inline style objects?
 
     You can use _spread operator_ in regular React:
 
@@ -3173,7 +3434,7 @@ In class-based React components, the `children` prop provides a powerful mechani
 
     **[⬆ Back to Top](#table-of-contents)**
 
-68. ### How to re-render the view when the browser is resized?
+69. ### How to re-render the view when the browser is resized?
 
     You can use the `useState` hook to manage the width and height state variables, and the `useEffect` hook to add and remove the `resize` event listener. The `[]` dependency array passed to useEffect ensures that the effect only runs once (on mount) and not on every re-render.
 
